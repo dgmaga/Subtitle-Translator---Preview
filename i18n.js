@@ -141,6 +141,8 @@ var I18N = {
     'find.undone': 'Reemplazo deshecho',
 
     'exp.srt': 'Descargar .srt',
+    'exp.tmx': 'Descargar TMX',
+    'exp.tmxSaveError': 'No se pudo guardar el TMX. {message}',
     'exp.bi': 'Bilingüe .srt',
     'exp.biTitle': 'Traducción y original en el mismo subtítulo',
     'exp.orig': 'Original limpio .srt',
@@ -348,6 +350,8 @@ var I18N = {
     'find.undone': 'Replacement undone',
 
     'exp.srt': 'Download .srt',
+    'exp.tmx': 'Download TMX',
+    'exp.tmxSaveError': 'Could not save the TMX. {message}',
     'exp.bi': 'Bilingual .srt',
     'exp.biTitle': 'Translation and original in the same subtitle',
     'exp.orig': 'Clean original .srt',

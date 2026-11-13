@@ -201,6 +201,10 @@ const Core = (() => {
     if (count(/[가-힯]/g) > 0.1) return 'ko';
     if (count(/\p{Script=Han}/gu) > 0.2) return 'zh-Hans';
     if (count(/[Ѐ-ӿ]/g) > 0.3) return 'ru';
+    const plainText = text.replace(/<[^>]*>/g, '');
+    const letters = plainText.match(/\p{L}/gu) || [];
+    const greekLetters = letters.filter(letter => /\p{Script=Greek}/u.test(letter));
+    if (greekLetters.length > letters.length / 2) return 'el';
     const words = text.toLowerCase().match(/\p{L}+/gu) || [];
     let best = 'en', bestScore = -1;
     for (const [lang, list] of Object.entries(STOP)) {
@@ -893,20 +897,44 @@ stacking = apilamiento`;
   }));
 
   // ---------- Carga de archivos ----------
-  el.drop.addEventListener('click', () => el.file.click());
-  el.drop.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); el.file.click(); } });
+  let sourceFileHandle = null;
+
+  async function chooseFile() {
+    if (typeof window.showOpenFilePicker !== 'function') return el.file.click();
+    try {
+      const [handle] = await window.showOpenFilePicker({
+        types: [{ accept: { 'text/plain': ['.srt', '.vtt', '.json', '.wrk'] } }],
+      });
+      await openFile(await handle.getFile(), Promise.resolve(handle));
+    } catch (error) {
+      if (error.name === 'SecurityError') el.file.click();
+      else if (error.name !== 'AbortError') toast(error.message, 'error');
+    }
+  }
+
+  el.drop.addEventListener('click', e => { if (e.target !== el.file) chooseFile(); });
+  el.drop.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); chooseFile(); } });
   el.drop.addEventListener('dragover', e => { e.preventDefault(); el.drop.classList.add('over'); });
   el.drop.addEventListener('dragleave', () => el.drop.classList.remove('over'));
-  el.drop.addEventListener('drop', e => { e.preventDefault(); el.drop.classList.remove('over'); if (e.dataTransfer.files[0]) openFile(e.dataTransfer.files[0]); });
+  el.drop.addEventListener('drop', e => {
+    e.preventDefault();
+    el.drop.classList.remove('over');
+    const file = e.dataTransfer.files[0];
+    if (!file) return;
+    const item = [...e.dataTransfer.items].find(item => item.kind === 'file');
+    const handle = item?.getAsFileSystemHandle?.().catch(() => null);
+    openFile(file, handle);
+  });
   el.file.addEventListener('change', () => { if (el.file.files[0]) openFile(el.file.files[0]); el.file.value = ''; });
 
-  async function openFile(file) {
+  async function openFile(file, handle = null) {
     if (S.running) return toast(t('file.stopFirst'), 'warn');
     el.restore.hidden = true;
     const text = await file.text();
     if (/\.(json|wrk)$/i.test(file.name)) return loadProjectFile(text, file.name);
     const subs = Core.parseSubtitles(text, file.name);
     if (!subs.length) return toast(t('file.noSubs'), 'error');
+    sourceFileHandle = await handle;
     S.fileName = file.name.replace(/\.(srt|vtt)$/i, '');
     S.subs = subs; S.out = subs.map(() => ''); S.st = subs.map(() => 'pending');
     S.usage = { in: 0, out: 0, cr: 0, cw: 0, cost: 0, req: 0 };
@@ -987,6 +1015,7 @@ stacking = apilamiento`;
       S.speakers = Core.analyzeSpeakers(S.subs); S.removeSpeakers = false;
       S.src = Core.detectLang(S.subs); el.src.value = S.src; setTarget(Core.defaultTarget(S.src));
     } else throw new Error(t('err.unknownFormat'));
+    sourceFileHandle = null;
     afterLoad();
   }
   function loadProjectFile(text, name) {
@@ -1037,9 +1066,9 @@ stacking = apilamiento`;
     undoOut = S.out.slice();
     let n = 0, rows = 0;
     S.out = S.out.map(t => { const h = countIn(re, t); if (!h) return t; n += h; rows++; return t.replace(re, () => by); });
-    renderTable(); updateFindCount(); saveProject();
+    renderTable(); updateFindCount(); updateProgress(); saveProject();
     el.findCount.innerHTML = `${t('find.changes', { n, rows })} · <button class="link" id="undoRepl">${t('find.undo')}</button>`;
-    $('#undoRepl').onclick = () => { if (!undoOut) return; S.out = undoOut; undoOut = null; renderTable(); updateFindCount(); saveProject(); toast(t('find.undone'), 'ok', 2500); };
+    $('#undoRepl').onclick = () => { if (!undoOut) return; S.out = undoOut; undoOut = null; renderTable(); updateFindCount(); updateProgress(); saveProject(); toast(t('find.undone'), 'ok', 2500); };
   });
 
   function highlight(text, re) {
@@ -1188,6 +1217,7 @@ stacking = apilamiento`;
   $('#resetAll').addEventListener('click', e => twoStep(e.currentTarget, () => {
     if (S.running) return;
     clearTimeout(saveT);
+    sourceFileHandle = null;
     Object.assign(S, { fileName: '', subs: [], out: [], st: [], speakers: { labels: [], affected: 0 }, removeSpeakers: true,
       usage: { in: 0, out: 0, cr: 0, cw: 0, cost: 0, req: 0 } });
     store.del('project');
@@ -1201,9 +1231,29 @@ stacking = apilamiento`;
   }));
 
   // ---------- Exportar ----------
-  el.exp.addEventListener('click', e => {
+  el.exp.addEventListener('click', async e => {
     const b = e.target.closest('[data-exp]'); if (!b) return;
     const kind = b.dataset.exp;
+    if (kind === 'tmx') {
+      const tmx = LocalizationTools.toTmx({
+        subtitles: S.subs,
+        translations: S.out,
+        statuses: S.st,
+        sourceLanguage: S.src,
+        targetLanguage: S.tgt,
+      });
+      const name = `${S.fileName}.${S.src}-${S.tgt}.tmx`;
+      if (typeof window.showSaveFilePicker !== 'function') {
+        download(name, tmx, 'application/xml');
+        return;
+      }
+      try {
+        await LocalizationTools.saveTmx(name, tmx, sourceFileHandle);
+      } catch (error) {
+        if (error.name !== 'AbortError') toast(t('exp.tmxSaveError', { message: error.message }), 'error');
+      }
+      return;
+    }
     const missing = S.st.filter((x, i) => x !== 'done' && S.subs[i].text.trim()).length;
     const texts = S.subs.map((s, i) => S.out[i] || (kind === 'project' ? '' : s.text));
     const suffix = { es: 'es', en: 'en', 'zh-Hans': 'zh' }[S.tgt] || S.tgt;
@@ -1232,6 +1282,8 @@ stacking = apilamiento`;
     const u = S.usage;
     el.stats.textContent = u.req ? t('prog.stats', { req: u.req, inTok: fmt(u.in + u.cr + u.cw), cached: fmt(u.cr), outTok: fmt(u.out) }) + (u.cost ? ` · ≈ ${money(u.cost)}` : '') : '';
     el.retry.hidden = !err || S.running;
+    el.exp.querySelector('[data-exp="tmx"]').disabled = !S.subs.some((sub, i) =>
+      LocalizationTools.hasTranslation(sub, S.out[i], S.st[i]));
   }
 
   function updateUI() {
