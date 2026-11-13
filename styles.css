@@ -209,3 +209,58 @@ body:not(.loaded) .findbar { display: none; }
 .uilang { width: auto; padding: .45rem .5rem; font-weight: 600; font-size: .85rem; background: transparent; }
 .chips { align-items: center; flex-wrap: wrap; }
 .chips #chipList { display: contents; }
+
+.video-preview {
+  margin-bottom: 1rem;
+  scroll-margin-block: 1rem;
+}
+
+.video-preview video:not([hidden]) {
+  display: block;
+  width: 100%;
+  max-height: 65vh;
+  background: #000;
+}
+
+.target-timing {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: .4rem;
+  margin-top: .4rem;
+}
+
+.target-timing label {
+  font-size: .8rem;
+}
+
+.target-timing input {
+  display: block;
+  width: 15ch;
+  font-variant-numeric: tabular-nums;
+}
+
+.editor-status {
+  position: fixed;
+  z-index: 10;
+  inset: auto 1rem 1rem auto;
+  max-width: calc(100% - 2rem);
+  padding: .7rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--bg);
+}
+
+#spellDialog [data-spell-result] p {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+#spellDialog [data-spell-result] :is(input, select) {
+  width: 100%;
+  margin-bottom: .5rem;
+}
+
+#spellDialog .actions {
+  flex-wrap: wrap;
+}

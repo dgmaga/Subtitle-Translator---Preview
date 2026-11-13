@@ -247,6 +247,26 @@ hex = hexágono"></textarea>
 
     <!-- 4. Tabla -->
     <section class="card" id="stepTable">
+      <div class="video-preview" id="videoPreview">
+        <h3 data-i="video.title">Video preview</h3>
+        <div id="previewDrop" class="drop" tabindex="0" role="button" data-i-aria="video.choose" aria-label="Choose an MP4">
+          <strong data-i="video.dropTitle">Drop an MP4 file here</strong>
+          <span data-i="video.dropHint">or click to browse</span>
+          <input id="previewFile" type="file" accept=".mp4,video/mp4" hidden>
+        </div>
+        <div class="row">
+          <label><span data-i="video.captions">Subtitles</span>
+            <select id="previewMode">
+              <option value="translation" data-i="video.translation">Translation</option>
+              <option value="original" data-i="video.original">Original</option>
+              <option value="off" data-i="video.off">No subtitles</option>
+            </select>
+          </label>
+        </div>
+        <p id="previewError" class="warn" role="alert" hidden></p>
+        <video id="previewVideo" controls playsinline preload="metadata" tabindex="0" hidden
+          data-i-aria="video.title" aria-label="Video preview"></video>
+      </div>
       <div class="tablehead">
         <h2><span class="n">3</span> <span data-i="table.title">Review and download</span></h2>
         <select id="filter">
@@ -286,6 +306,7 @@ hex = hexágono"></textarea>
         </table>
       </div>
       <div class="exportbar" id="exportBar">
+        <button class="btn" id="checkSpelling" type="button" data-i="spell.check">Check spelling</button>
         <button class="btn primary" data-exp="srt" disabled="" data-i="exp.srt">Download .srt</button>
         <button class="btn" data-exp="vtt" disabled="">.vtt</button>
         <button class="btn" data-exp="tmx" disabled="" data-i="exp.tmx">Download TMX</button>
@@ -381,8 +402,16 @@ hex = hexágono"></textarea>
   </dialog>
 
   <div id="toasts" aria-live="polite"></div>
+  <dialog id="spellDialog">
+    <h2 data-i="spell.check">Check spelling</h2>
+    <p data-spell-status role="status"></p>
+    <div data-spell-result></div>
+    <form method="dialog" class="actions"><button class="btn" data-i="spell.close">Close</button></form>
+  </dialog>
   <script src="i18n.js"></script>
+  <script src="spellcheck.js"></script>
   <script src="Localizationtools.js"></script>
+  <script src="videoprevis.js"></script>
   <script src="app.js"></script>
 
 

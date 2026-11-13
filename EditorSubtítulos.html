@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Editor de subtítulos</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="top">
+    <div class="brand">
+      <span class="logo" aria-hidden="true"></span>
+      <h1><span data-i="editor.title">Subtitle Editor</span></h1>
+    </div>
+    <nav class="topnav">
+      <select id="uiLang" class="uilang" data-i-aria="app.uiLang" aria-label="Interface language">
+        <option value="es">ES</option>
+        <option value="en">EN</option>
+      </select>
+      <button class="btn ghost" id="openKeys" data-i="nav.keys"><span aria-hidden="true">🔑</span> API keys</button>
+    </nav>
+  </header>
+  <main>
+    <section class="card">
+      <h2 data-i="file.title">Subtitles</h2>
+      <div id="editorDrop" class="drop" tabindex="0" role="button" data-i-aria="file.dropAria" aria-label="Choose a subtitle file">
+        <strong data-i="editor.drop">Drop an SRT file here</strong>
+        <span data-i="video.dropHint">or click to browse</span>
+        <input id="editorFile" type="file" accept=".srt,application/x-subrip" hidden>
+      </div>
+      <p id="editorFileName" class="fileinfo" hidden></p>
+    </section>
+    <section class="card">
+      <div class="video-preview" id="videoPreview">
+        <h3 data-i="video.title">Video preview</h3>
+        <div id="previewDrop" class="drop" tabindex="0" role="button" data-i-aria="video.choose" aria-label="Choose an MP4">
+          <strong data-i="video.dropTitle">Drop an MP4 file here</strong>
+          <span data-i="video.dropHint">or click to browse</span>
+          <input id="previewFile" type="file" accept=".mp4,video/mp4" hidden>
+        </div>
+        <div class="row">
+          <label><span data-i="video.captions">Subtitles</span>
+            <select id="previewMode">
+              <option value="translation" data-i="editor.edited">Edited subtitles</option>
+              <option value="off" data-i="video.off">No subtitles</option>
+            </select>
+          </label>
+        </div>
+        <p id="previewError" class="warn" role="alert" hidden></p>
+        <video id="previewVideo" controls playsinline preload="metadata" tabindex="0" hidden
+          data-i-aria="video.title" aria-label="Video preview"></video>
+      </div>
+    </section>
+    <section class="card">
+      <h2 data-i="editor.edit">Edit subtitles</h2>
+      <div class="tablewrap">
+        <table>
+          <thead>
+            <tr><th>#</th><th data-i="editor.edited">Edited subtitles</th><th></th></tr>
+          </thead>
+          <tbody id="editorRows">
+            <tr><td colspan="3" class="muted center" data-i="table.empty">Your subtitles will appear here once you load a file.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="exportbar">
+        <label><span data-i="spell.language">Spelling language</span>
+          <select id="spellingLanguage">
+            <option value="es" lang="es">Español</option>
+            <option value="en" lang="en">English</option>
+            <option value="el" lang="el">Ελληνικά</option>
+            <option value="de" lang="de">Deutsch</option>
+          </select>
+        </label>
+        <button class="btn" id="checkSpelling" type="button" data-i="spell.check">Check spelling</button>
+        <button class="btn primary" id="editorSrt" disabled data-i="exp.srt">Download .srt</button>
+        <button class="btn" id="editorVtt" disabled data-i="editor.vtt">Download .vtt</button>
+      </div>
+    </section>
+  </main>
+  <dialog id="keysDlg">
+    <form method="dialog" class="keys">
+      <h2 data-i="keys.title">API keys</h2>
+      <p class="muted" data-i="editor.keysIntro">Save provider settings for future use.</p>
+      <label>Claude (Anthropic) <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener"
+          data-i="keys.get">get one</a>
+        <span class="inline"><input type="password" id="kAnthropic" placeholder="sk-ant-…" autocomplete="off"><button
+            type="button" class="icon" data-eye="kAnthropic" data-i-aria="keys.show"
+            aria-label="Show or hide the key">👁</button></span>
+      </label>
+      <label>OpenRouter <a href="https://openrouter.ai/keys" target="_blank" rel="noopener" data-i="keys.get">get
+          one</a>
+        <span class="inline"><input type="password" id="kOpenrouter" placeholder="sk-or-…" autocomplete="off"><button
+            type="button" class="icon" data-eye="kOpenrouter" data-i-aria="keys.show"
+            aria-label="Show or hide the key">👁</button></span>
+      </label>
+      <label>OpenAI <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener" data-i="keys.get">get
+          one</a>
+        <span class="inline"><input type="password" id="kOpenai" placeholder="sk-…" autocomplete="off"><button
+            type="button" class="icon" data-eye="kOpenai" data-i-aria="keys.show"
+            aria-label="Show or hide the key">👁</button></span>
+      </label>
+      <label><span data-i="keys.lm">LM Studio address</span>
+        <input type="text" id="kLm" placeholder="http://127.0.0.1:1234">
+        <small class="muted" data-i="keys.lmHint">In LM Studio: Developer tab → start the server and turn on “Enable
+          CORS”.</small>
+      </label>
+      <label class="check"><input type="checkbox" id="kRemember" checked=""> <span data-i="keys.remember">Remember keys
+          in this browser</span></label>
+      <div class="actions">
+        <button class="btn ghost" id="keysCancel" data-i="keys.cancel">Cancel</button>
+        <button class="btn primary" id="keysSave" data-i="keys.save">Save</button>
+      </div>
+    </form>
+  </dialog>
+  <div id="editorStatus" class="editor-status" role="status" hidden></div>
+  <dialog id="spellDialog">
+    <h2 data-i="spell.check">Check spelling</h2>
+    <p data-spell-status role="status"></p>
+    <div data-spell-result></div>
+    <form method="dialog" class="actions"><button class="btn" data-i="spell.close">Close</button></form>
+  </dialog>
+  <script src="i18n.js"></script>
+  <script src="spellcheck.js"></script>
+  <script src="videoprevis.js"></script>
+  <script src="app.js"></script>
+  <script src="editorsubtitulos.js"></script>
+</body>
+</html>

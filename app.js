@@ -67,6 +67,17 @@ const Core = (() => {
     return String(content).replace(/^﻿/, '').replace(/\r\n?/g, '\n');
   }
 
+  function parseTargetTiming(start, end) {
+    const timecode = /^\d{2,}:([0-5]\d):([0-5]\d)[,.]\d{3}$/;
+    start = typeof start === 'string' ? start.trim() : '';
+    end = typeof end === 'string' ? end.trim() : '';
+    if (!timecode.test(start) || !timecode.test(end)) return null;
+    const a = normTime(start);
+    const b = normTime(end);
+    const length = Math.max(a.length, b.length);
+    return a.padStart(length, '0') < b.padStart(length, '0') ? { start: a, end: b } : null;
+  }
+
   function parseSRT(content) {
     const subs = [];
     const blocks = cleanText(content).split(/\n[ \t]*\n/);
@@ -420,7 +431,7 @@ Return exactly one entry for every id you are asked to translate.`;
 
   return {
     VERSION, LANGS, langName, langPrompt, isCJK, normTime, parseSRT, parseVTT, parseSubtitles,
-    lineLabel, analyzeSpeakers, stripSpeakers, detectLang, defaultTarget, parseGlossary,
+    lineLabel, analyzeSpeakers, stripSpeakers, detectLang, defaultTarget, parseGlossary, parseTargetTiming,
     buildSystemPrompt, buildUserPrompt, transcriptOf, extractJSON, parseResponse, toSRT, toVTT,
     CLAUDE_MODELS, OR_FAMILIES, pickRecommended, pickOpenAI, estTokens, makeBatches,
   };
@@ -688,6 +699,7 @@ if (typeof module !== 'undefined') module.exports = { Core, Api, Engine, t, setU
 if (typeof document !== 'undefined') document.addEventListener('DOMContentLoaded', () => {
 
   const $ = s => document.querySelector(s);
+  if (!$('#stepSettings')) return;
   const store = {
     get(k, d) { try { const v = localStorage.getItem('ts2.' + k); return v == null ? d : JSON.parse(v); } catch { return d; } },
     set(k, v) { try { localStorage.setItem('ts2.' + k, JSON.stringify(v)); } catch { } },
@@ -987,7 +999,7 @@ stacking = apilamiento`;
     return {
       app: 'traductor-subtitulos', version: 2, fileName: S.fileName, src: S.src, tgt: S.tgt, notes: el.notes.value,
       removeSpeakers: S.removeSpeakers, speakers: S.speakers,
-      subs: S.subs.map(s => ({ start: s.start, end: s.end, raw: s.raw })),
+      subs: S.subs.map(s => ({ start: s.start, end: s.end, raw: s.raw, targetTiming: s.targetTiming })),
       out: S.out, st: S.st.map(x => (x === 'working' ? 'pending' : x)),
     };
   }
@@ -1001,7 +1013,9 @@ stacking = apilamiento`;
   }
   function restoreProject(p) {
     if (p.version === 2) {
-      S.fileName = p.fileName; S.subs = p.subs.map(s => ({ ...s, text: s.raw }));
+      S.fileName = p.fileName; S.subs = p.subs.map(s => ({
+        ...s, text: s.raw, targetTiming: Core.parseTargetTiming(s.targetTiming?.start, s.targetTiming?.end) || undefined,
+      }));
       S.out = p.out; S.st = p.st; S.speakers = p.speakers || { labels: [], affected: 0 };
       S.removeSpeakers = p.removeSpeakers !== false; applySpeakers();
       S.src = p.src; el.src.value = p.src; el.notes.value = p.notes || '';
@@ -1082,7 +1096,23 @@ stacking = apilamiento`;
     return out + esc(text.slice(last));
   }
 
+  const preview = VideoPreview.mount({
+    panel: $('#videoPreview'),
+    drop: $('#previewDrop'),
+    input: $('#previewFile'),
+    video: $('#previewVideo'),
+    mode: $('#previewMode'),
+    error: $('#previewError'),
+    getSubtitles: showOriginal => S.subs.map((sub, i) => ({
+      ...(showOriginal ? sub : (sub.targetTiming || sub)),
+      text: showOriginal ? sub.text : (S.st[i] === 'done' ? S.out[i] : ''),
+    })),
+    t,
+    onReadyChange: renderTable,
+  });
+
   function renderTable() {
+    preview.sync();
     const f = el.filter.value;
     const re = findRegex();
     const rows = [];
@@ -1093,12 +1123,35 @@ stacking = apilamiento`;
       rows.push(`<tr id="r${i}" class="${S.st[i]}">
         <td class="num">${i + 1}<small>${s.start.slice(3, 8)}</small></td>
         <td class="orig">${s.text ? highlight(s.text, re) : `<i class="muted">${t('row.empty')}</i>`}</td>
-        <td class="trad"><textarea data-row="${i}" aria-label="${t('row.aria', { n: i + 1 })}" rows="${Math.max(1, (S.out[i] || s.text).split('\n').length)}" placeholder="${S.st[i] === 'error' ? t('row.phError') : t('row.ph')}">${esc(S.out[i] || '')}</textarea></td>
-        <td class="act"><button class="icon" data-re="${i}" title="${t('row.re')}" aria-label="${t('row.reAria', { n: i + 1 })}">↻</button></td></tr>`);
+        <td class="trad"><textarea data-row="${i}" aria-label="${t('row.aria', { n: i + 1 })}" rows="${Math.max(1, (S.out[i] || s.text).split('\n').length)}" placeholder="${S.st[i] === 'error' ? t('row.phError') : t('row.ph')}">${esc(S.out[i] || '')}</textarea>
+          <form class="target-timing" data-timing="${i}">
+            <label>${t('timing.start')} <input name="start" value="${esc((s.targetTiming || s).start)}" spellcheck="false"></label>
+            <label>${t('timing.end')} <input name="end" value="${esc((s.targetTiming || s).end)}" spellcheck="false"></label>
+            <button type="submit" class="btn sm">${t('timing.apply')}</button>
+          </form>
+        </td>
+        <td class="act">${preview.ready() ? `<button type="button" class="icon" data-seek="${i}" title="${t('video.seek', { n: i + 1 })}" aria-label="${t('video.seek', { n: i + 1 })}">▶</button>` : ''}<button class="icon" data-re="${i}" title="${t('row.re')}" aria-label="${t('row.reAria', { n: i + 1 })}">↻</button></td></tr>`);
     });
     el.table.innerHTML = rows.join('') || `<tr><td colspan="4" class="muted center">${re ? t('table.noMatch') : t('table.nothing')}</td></tr>`;
   }
+
+  SpellCheck.mount({
+    button: $('#checkSpelling'),
+    dialog: $('#spellDialog'),
+    getLanguage: () => S.tgt,
+    getTexts: () => S.subs.map((_, i) => S.st[i] === 'done' ? (S.out[i] || '') : ''),
+    replaceText: (i, previous, updated) => {
+      if (S.st[i] !== 'done' || S.out[i] !== previous) return false;
+      S.out[i] = updated;
+      renderTable();
+      updateProgress();
+      saveProject();
+      return true;
+    },
+    t,
+  });
   function updateRow(i) {
+    preview.sync();
     const tr = document.getElementById('r' + i);
     if (!tr) return;
     tr.className = S.st[i];
@@ -1106,6 +1159,22 @@ stacking = apilamiento`;
     if (document.activeElement !== ta) { ta.value = S.out[i] || ''; ta.rows = Math.max(1, (S.out[i] || '').split('\n').length); }
   }
   el.filter.addEventListener('change', renderTable);
+  el.table.addEventListener('submit', e => {
+    const form = e.target.closest('[data-timing]');
+    if (!form) return;
+    e.preventDefault();
+    const start = form.elements.namedItem('start');
+    const end = form.elements.namedItem('end');
+    const timing = Core.parseTargetTiming(start.value, end.value);
+    if (!timing) return toast(t('timing.invalid'), 'warn');
+    const subtitle = S.subs[+form.dataset.timing];
+    subtitle.targetTiming = timing.start === subtitle.start && timing.end === subtitle.end ? undefined : timing;
+    start.value = timing.start;
+    end.value = timing.end;
+    preview.sync();
+    saveProject();
+    toast(t('timing.saved'), 'ok', 1800);
+  });
   el.table.addEventListener('input', e => {
     const ta = e.target.closest('textarea'); if (!ta) return;
     const i = +ta.dataset.row;
@@ -1116,6 +1185,8 @@ stacking = apilamiento`;
     if (el.findText.value) { clearTimeout(findT); findT = setTimeout(updateFindCount, 300); }
   });
   el.table.addEventListener('click', e => {
+    const seek = e.target.closest('[data-seek]');
+    if (seek) return preview.seek(S.subs[+seek.dataset.seek]);
     const b = e.target.closest('[data-re]'); if (!b) return;
     const i = +b.dataset.re;
     if (S.running) return toast(t('run.wait'), 'warn');
@@ -1220,6 +1291,7 @@ stacking = apilamiento`;
     sourceFileHandle = null;
     Object.assign(S, { fileName: '', subs: [], out: [], st: [], speakers: { labels: [], affected: 0 }, removeSpeakers: true,
       usage: { in: 0, out: 0, cr: 0, cw: 0, cost: 0, req: 0 } });
+    preview.clear();
     store.del('project');
     el.fileInfo.hidden = true; el.speakerBox.hidden = true; el.restore.hidden = true;
     el.notes.value = ''; el.filter.value = 'all'; el.findText.value = ''; el.replText.value = ''; el.findCount.textContent = '';
@@ -1257,7 +1329,7 @@ stacking = apilamiento`;
     const missing = S.st.filter((x, i) => x !== 'done' && S.subs[i].text.trim()).length;
     const texts = S.subs.map((s, i) => S.out[i] || (kind === 'project' ? '' : s.text));
     const suffix = { es: 'es', en: 'en', 'zh-Hans': 'zh' }[S.tgt] || S.tgt;
-    if (kind === 'srt') download(`${S.fileName}.${suffix}.srt`, Core.toSRT(S.subs, texts));
+    if (kind === 'srt') download(`${S.fileName}.${suffix}.srt`, Core.toSRT(S.subs.map(s => s.targetTiming || s), texts));
     if (kind === 'vtt') download(`${S.fileName}.${suffix}.vtt`, Core.toVTT(S.subs, texts));
     if (kind === 'bi') download(`${S.fileName}.${t('exp.biName')}.srt`, Core.toSRT(S.subs, S.subs.map((s, i) => [S.out[i], s.text].filter(Boolean).join('\n'))));
     if (kind === 'orig') download(`${S.fileName}.${t('exp.cleanName')}.srt`, Core.toSRT(S.subs, S.subs.map(s => s.text)));
@@ -1273,6 +1345,7 @@ stacking = apilamiento`;
 
   // ---------- Estado de la interfaz ----------
   function updateProgress() {
+    preview.sync();
     const total = S.subs.length || 1;
     const done = S.st.filter(x => x === 'done').length;
     const err = S.st.filter(x => x === 'error').length;
@@ -1325,6 +1398,7 @@ stacking = apilamiento`;
     $('#uiLang').disabled = S.running;
     el.stop.hidden = !S.running;
     el.exp.querySelectorAll('button').forEach(b => (b.disabled = !S.subs.length));
+    $('#checkSpelling').disabled = S.running || !S.subs.length;
     $('#clearTrans').disabled = S.running || !S.st.some(x => x === 'done' || x === 'error');
     $('#resetAll').disabled = S.running || !S.subs.length;
     document.body.classList.toggle('running', S.running);
