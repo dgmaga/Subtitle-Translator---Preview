@@ -29,6 +29,7 @@ const Core = (() => {
   const LANGS = [
     ['es', 'Español (España)', 'Spanish (Spain)', 'Spanish (Spain)'],
     ['en', 'Inglés', 'English', 'English'],
+    ['el', 'Griego', 'Greek', 'Greek'],
     ['zh-Hans', 'Chino simplificado', 'Simplified Chinese (Mainland China)', 'Chinese (Simplified)'],
     ['es-419', 'Español (Latinoamérica)', 'Latin American Spanish', 'Spanish (Latin America)'],
     ['zh-Hant', 'Chino tradicional', 'Traditional Chinese', 'Chinese (Traditional)'],
@@ -76,6 +77,60 @@ const Core = (() => {
     const b = normTime(end);
     const length = Math.max(a.length, b.length);
     return a.padStart(length, '0') < b.padStart(length, '0') ? { start: a, end: b } : null;
+  }
+
+  const PROJECT_STATUSES = new Set(['pending', 'working', 'done', 'error']);
+
+  function parseProject(project) {
+    const invalid = () => { throw new Error(t('err.unknownFormat')); };
+    const record = value => value !== null && typeof value === 'object' && !Array.isArray(value);
+    const language = code => LANGS.some(([value]) => value === code);
+    const timecode = /^\d+(?::\d{1,2}){1,2}(?:[,.]\d{1,3})?$/;
+    function cue(start, end, raw, targetTiming) {
+      if (typeof raw !== 'string' || typeof start !== 'string' || typeof end !== 'string' ||
+          !timecode.test(start) || !timecode.test(end)) invalid();
+      const timing = targetTiming == null ? undefined : parseTargetTiming(targetTiming.start, targetTiming.end);
+      if (targetTiming != null && !timing) invalid();
+      return { start: normTime(start), end: normTime(end), raw, text: raw, targetTiming: timing };
+    }
+
+    if (!record(project)) invalid();
+    if (project.version === 2) {
+      const { fileName, src, tgt, notes, removeSpeakers, subs, out, st } = project;
+      if (typeof fileName !== 'string' || !language(src) || !language(tgt) ||
+          (notes != null && typeof notes !== 'string') ||
+          (removeSpeakers != null && typeof removeSpeakers !== 'boolean') ||
+          !Array.isArray(subs) || !subs.length || !Array.isArray(out) || !Array.isArray(st) ||
+          out.length !== subs.length || st.length !== subs.length ||
+          out.some(text => typeof text !== 'string') || st.some(status => !PROJECT_STATUSES.has(status))) invalid();
+      return {
+        fileName, src, tgt, notes: notes ?? '', removeSpeakers: removeSpeakers !== false,
+        subs: subs.map(s => {
+          if (!record(s)) invalid();
+          return cue(s.start, s.end, s.raw, s.targetTiming);
+        }),
+        out: [...out], st: st.map(status => status === 'working' ? 'pending' : status),
+      };
+    }
+
+    const { originalFileName, subtitles, translatedSubtitles } = project;
+    if (!Array.isArray(subtitles) || !subtitles.length ||
+        (originalFileName != null && typeof originalFileName !== 'string') ||
+        (translatedSubtitles != null && (!Array.isArray(translatedSubtitles) ||
+          translatedSubtitles.some(text => text != null && typeof text !== 'string')))) invalid();
+    const subs = subtitles.map(s => {
+      if (!record(s) || typeof s.timecode !== 'string') invalid();
+      const parts = s.timecode.split('-->');
+      if (parts.length !== 2) invalid();
+      return cue(parts[0].trim(), parts[1].trim(), s.text);
+    });
+    const out = subs.map((_, i) => translatedSubtitles?.[i] ?? '');
+    const src = detectLang(subs);
+    return {
+      fileName: (originalFileName || 'subtitulos').replace(/\.srt$/i, ''),
+      src, tgt: defaultTarget(src), notes: '', removeSpeakers: false, subs, out,
+      st: out.map(text => text ? 'done' : 'pending'),
+    };
   }
 
   function parseSRT(content) {
@@ -431,7 +486,7 @@ Return exactly one entry for every id you are asked to translate.`;
 
   return {
     VERSION, LANGS, langName, langPrompt, isCJK, normTime, parseSRT, parseVTT, parseSubtitles,
-    lineLabel, analyzeSpeakers, stripSpeakers, detectLang, defaultTarget, parseGlossary, parseTargetTiming,
+    lineLabel, analyzeSpeakers, stripSpeakers, detectLang, defaultTarget, parseGlossary, parseTargetTiming, parseProject,
     buildSystemPrompt, buildUserPrompt, transcriptOf, extractJSON, parseResponse, toSRT, toVTT,
     CLAUDE_MODELS, OR_FAMILIES, pickRecommended, pickOpenAI, estTokens, makeBatches,
   };
@@ -782,6 +837,8 @@ stacking = apilamiento`;
   const notice = msg => { if (Date.now() - lastNotice > 1500) { lastNotice = Date.now(); toast(msg, 'warn'); } };
 
   // ---------- Idiomas ----------
+  el.src.replaceChildren();
+  el.tgt.replaceChildren();
   for (const [code] of Core.LANGS) {
     el.src.add(new Option(Core.langName(code), code));
     el.tgt.add(new Option(Core.langName(code), code));
@@ -970,12 +1027,23 @@ stacking = apilamiento`;
     const has = sp.labels.length || sp.arrows || sp.vtags;
     el.speakerBox.hidden = !has;
     if (!has) return;
-    const list = sp.labels.slice(0, 8).map(l => `<span class="tag">${esc(l.label)} <b>${l.count}</b></span>`).join(' ');
-    el.speakerBox.innerHTML = `
-      <label class="check"><input type="checkbox" id="spkToggle" ${S.removeSpeakers ? 'checked' : ''}>
-      <span>${t('spk.remove', { n: sp.affected })}</span></label>
-      <div class="tags">${list}${sp.arrows ? ' <span class="tag">&gt;&gt; <b>' + sp.arrows + '</b></span>' : ''}${sp.vtags ? ' <span class="tag">&lt;v&gt; <b>' + sp.vtags + '</b></span>' : ''}</div>`;
-    $('#spkToggle').addEventListener('change', e => {
+    el.speakerBox.innerHTML = '<label class="check"><input type="checkbox"><span></span></label><div class="tags"></div>';
+    const toggle = el.speakerBox.querySelector('input');
+    toggle.checked = S.removeSpeakers;
+    el.speakerBox.querySelector('label span').textContent = t('spk.remove', { n: sp.affected });
+    const tags = el.speakerBox.querySelector('.tags');
+    const labels = sp.labels.slice(0, 8);
+    if (sp.arrows) labels.push({ label: '>>', count: sp.arrows });
+    if (sp.vtags) labels.push({ label: '<v>', count: sp.vtags });
+    for (const { label, count } of labels) {
+      const tag = document.createElement('span');
+      tag.className = 'tag';
+      const number = document.createElement('b');
+      number.textContent = count;
+      tag.append(label + ' ', number);
+      tags.append(tag, ' ');
+    }
+    toggle.addEventListener('change', e => {
       if (S.st.some(x => x === 'done')) toast(t('spk.warn'), 'warn');
       S.removeSpeakers = e.target.checked; applySpeakers(); renderTable(); saveProject();
     });
@@ -984,7 +1052,7 @@ stacking = apilamiento`;
   function afterLoad() {
     hideWelcome();
     updateCtxSummary();
-    el.fileInfo.innerHTML = t('file.info', { name: esc(S.fileName), n: S.subs.length, dur: S.subs[S.subs.length - 1]?.end.slice(0, 8) || '' });
+    el.fileInfo.textContent = t('file.info', { name: S.fileName, n: S.subs.length, dur: S.subs[S.subs.length - 1]?.end.slice(0, 8) || '' });
     el.fileInfo.hidden = false;
     document.body.classList.add('loaded');
     renderSpeakerBox();
@@ -1012,40 +1080,30 @@ stacking = apilamiento`;
     }, 400);
   }
   function restoreProject(p) {
-    if (p.version === 2) {
-      S.fileName = p.fileName; S.subs = p.subs.map(s => ({
-        ...s, text: s.raw, targetTiming: Core.parseTargetTiming(s.targetTiming?.start, s.targetTiming?.end) || undefined,
-      }));
-      S.out = p.out; S.st = p.st; S.speakers = p.speakers || { labels: [], affected: 0 };
-      S.removeSpeakers = p.removeSpeakers !== false; applySpeakers();
-      S.src = p.src; el.src.value = p.src; el.notes.value = p.notes || '';
-      setTarget(p.tgt);
-    } else if (Array.isArray(p.subtitles)) {
-      // Archivo .wrk de la versión 1
-      S.fileName = (p.originalFileName || 'subtitulos').replace(/\.srt$/i, '');
-      S.subs = p.subtitles.map(s => { const [a, b] = String(s.timecode).split('-->'); return { start: Core.normTime(a), end: Core.normTime(b), raw: s.text, text: s.text }; });
-      S.out = S.subs.map((_, i) => p.translatedSubtitles?.[i] || '');
-      S.st = S.out.map(t => (t ? 'done' : 'pending'));
-      S.speakers = Core.analyzeSpeakers(S.subs); S.removeSpeakers = false;
-      S.src = Core.detectLang(S.subs); el.src.value = S.src; setTarget(Core.defaultTarget(S.src));
-    } else throw new Error(t('err.unknownFormat'));
+    const { tgt, notes, ...project } = p;
+    const speakers = Core.analyzeSpeakers(project.subs);
+    Object.assign(S, project, { speakers });
+    applySpeakers();
+    el.src.value = S.src;
+    el.notes.value = notes;
+    setTarget(tgt);
     sourceFileHandle = null;
     afterLoad();
   }
   function loadProjectFile(text, name) {
-    try { restoreProject(JSON.parse(text)); toast(t('proj.restored', { name: S.fileName }), 'ok', 3000); }
+    try { restoreProject(Core.parseProject(JSON.parse(text))); toast(t('proj.restored', { name: S.fileName }), 'ok', 3000); }
     catch { toast(t('proj.cantRead', { name }), 'error'); }
   }
-  (function offerRestore() {
-    const p = store.get('project', null);
-    if (!p || !p.subs?.length) return;
+  function offerRestore(p) {
     const done = p.st.filter(x => x === 'done').length;
     el.restore.hidden = false;
-    el.restore.innerHTML = `${t('restore.banner', { name: esc(p.fileName), done, total: p.subs.length })}
-      <button class="btn sm" id="rYes">${t('restore.yes')}</button> <button class="btn sm ghost" id="rNo">${t('restore.no')}</button>`;
+    el.restore.innerHTML = '<span></span> <button class="btn sm" id="rYes"></button> <button class="btn sm ghost" id="rNo"></button>';
+    el.restore.querySelector('span').textContent = t('restore.banner', { name: p.fileName, done, total: p.subs.length });
+    $('#rYes').textContent = t('restore.yes');
+    $('#rNo').textContent = t('restore.no');
     $('#rYes').onclick = () => { restoreProject(p); el.restore.hidden = true; };
     $('#rNo').onclick = () => { store.del('project'); el.restore.hidden = true; };
-  })();
+  }
 
   // ---------- Tabla ----------
   // ---------- Buscar y reemplazar ----------
@@ -1120,8 +1178,8 @@ stacking = apilamiento`;
       if (f === 'pending' && S.st[i] === 'done') return;
       if (f === 'error' && S.st[i] !== 'error') return;
       if (re && !countIn(re, s.text) && !countIn(re, S.out[i])) return;
-      rows.push(`<tr id="r${i}" class="${S.st[i]}">
-        <td class="num">${i + 1}<small>${s.start.slice(3, 8)}</small></td>
+      rows.push(`<tr id="r${i}" class="${esc(S.st[i])}">
+        <td class="num">${i + 1}<small>${esc(s.start.slice(3, 8))}</small></td>
         <td class="orig">${s.text ? highlight(s.text, re) : `<i class="muted">${t('row.empty')}</i>`}</td>
         <td class="trad"><textarea data-row="${i}" aria-label="${t('row.aria', { n: i + 1 })}" rows="${Math.max(1, (S.out[i] || s.text).split('\n').length)}" placeholder="${S.st[i] === 'error' ? t('row.phError') : t('row.ph')}">${esc(S.out[i] || '')}</textarea>
           <form class="target-timing" data-timing="${i}">
@@ -1445,8 +1503,16 @@ stacking = apilamiento`;
   loadModels();
   // Tras cambiar de idioma, se recupera el trabajo sin preguntar
   const pendingProject = store.get('project', null);
-  if (store.get('autoRestore', false)) {
-    store.del('autoRestore');
-    if (pendingProject?.subs?.length) { el.restore.hidden = true; restoreProject(pendingProject); }
+  const autoRestore = store.get('autoRestore', false);
+  store.del('autoRestore');
+  el.restore.hidden = true;
+  if (pendingProject !== null) {
+    try {
+      const project = Core.parseProject(pendingProject);
+      if (autoRestore) restoreProject(project);
+      else offerRestore(project);
+    } catch {
+      toast(t('proj.invalidAutosave'), 'error');
+    }
   }
 });
