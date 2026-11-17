@@ -16,7 +16,7 @@
   <meta property="og:type" content="website">
   <link rel="icon"
     href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'&gt;&lt;rect width='64' height='64' rx='14' fill='%23b84d1b'/&gt;&lt;rect x='12' y='34' width='40' height='6' rx='3' fill='white'/&gt;&lt;rect x='18' y='44' width='28' height='6' rx='3' fill='white' opacity='.75'/&gt;&lt;/svg&gt;">
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="css/styles.css">
 </head>
 
 <body>
@@ -266,6 +266,7 @@ hex = hexágono"></textarea>
         <p id="previewError" class="warn" role="alert" hidden></p>
         <video id="previewVideo" controls playsinline preload="metadata" tabindex="0" hidden
           data-i-aria="video.title" aria-label="Video preview"></video>
+        <button type="button" class="btn" id="goToSegment" disabled data-i="video.goSegment">Go to segment</button>
       </div>
       <div class="tablehead">
         <h2><span class="n">3</span> <span data-i="table.title">Review and download</span></h2>
@@ -306,7 +307,7 @@ hex = hexágono"></textarea>
         </table>
       </div>
       <div class="exportbar" id="exportBar">
-        <button class="btn" id="checkSpelling" type="button" data-i="spell.check">Check spelling</button>
+        <button class="btn" id="checkSpelling" type="button" hidden data-i="spell.check">Check spelling</button>
         <button class="btn primary" data-exp="srt" disabled="" data-i="exp.srt">Download .srt</button>
         <button class="btn" data-exp="vtt" disabled="">.vtt</button>
         <button class="btn" data-exp="tmx" disabled="" data-i="exp.tmx">Download TMX</button>

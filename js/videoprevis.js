@@ -6,13 +6,33 @@ const VideoPreview = (() => {
     return hours * 3600 + minutes * 60 + rest;
   }
 
-  function mount({ panel, drop, input, video, mode, error, getSubtitles, t, onReadyChange }) {
+  function mount({ panel, drop, input, video, mode, error, getSubtitles, t, onReadyChange, goToSegment, onGoToSegment }) {
     const track = video.addTextTrack('subtitles');
     let url = null;
     let frame = null;
 
+    function currentSegment() {
+      if (!ready() || mode.value === 'off') return -1;
+      return getSubtitles(mode.value === 'original').findIndex(subtitle =>
+        subtitle.text?.trim() && video.currentTime >= seconds(subtitle.start) &&
+        video.currentTime < seconds(subtitle.end));
+    }
+
+    function updateNavigation() {
+      goToSegment.disabled = currentSegment() < 0;
+    }
+
+    goToSegment.addEventListener('click', () => {
+      const index = currentSegment();
+      if (index >= 0) onGoToSegment(index);
+    });
+    for (const event of ['timeupdate', 'seeked', 'loadedmetadata', 'emptied']) {
+      video.addEventListener(event, updateNavigation);
+    }
+
     function refreshTrack() {
       frame = null;
+      updateNavigation();
       track.mode = url && mode.value !== 'off' ? 'showing' : 'disabled';
       if (!url || mode.value === 'off') return;
       for (const cue of Array.from(track.cues || [])) track.removeCue(cue);
@@ -29,6 +49,7 @@ const VideoPreview = (() => {
     }
 
     function sync() {
+      updateNavigation();
       if (url && frame === null) frame = requestAnimationFrame(refreshTrack);
     }
 
@@ -47,6 +68,7 @@ const VideoPreview = (() => {
       for (const cue of Array.from(track.cues || [])) track.removeCue(cue);
       track.mode = 'disabled';
       error.hidden = true;
+      goToSegment.disabled = true;
       onReadyChange();
     }
 

@@ -1159,6 +1159,18 @@ stacking = apilamiento`;
     drop: $('#previewDrop'),
     input: $('#previewFile'),
     video: $('#previewVideo'),
+    goToSegment: $('#goToSegment'),
+    onGoToSegment: index => {
+      if (!document.getElementById('r' + index)) {
+        el.filter.value = 'all';
+        el.findText.value = '';
+        renderTable();
+        updateFindCount();
+      }
+      const field = document.getElementById('r' + index)?.querySelector('textarea');
+      field?.scrollIntoView({ block: 'center' });
+      field?.focus({ preventScroll: true });
+    },
     mode: $('#previewMode'),
     error: $('#previewError'),
     getSubtitles: showOriginal => S.subs.map((sub, i) => ({

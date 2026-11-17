@@ -40,6 +40,12 @@ document.addEventListener('DOMContentLoaded', () => {
     drop: $('#previewDrop'),
     input: $('#previewFile'),
     video: $('#previewVideo'),
+    goToSegment: $('#goToSegment'),
+    onGoToSegment: index => {
+      const field = rows.querySelector('[data-index="' + index + '"] textarea');
+      field?.scrollIntoView({ block: 'center' });
+      field?.focus({ preventScroll: true });
+    },
     mode: $('#previewMode'),
     error: $('#previewError'),
     getSubtitles: () => subtitles,

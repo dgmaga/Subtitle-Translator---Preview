@@ -14,7 +14,9 @@ The project has two browser pages with English and Spanish interfaces.
 
 The editor's **API keys** dialog can store provider settings for future use. Editing, preview, spelling, and export run without an AI provider.
 
-## Check spelling
+## Enable spelling review
+
+The **Check spelling** button is hidden by default on both pages because spelling review requires a web server or localhost. To enable it, remove the `hidden` attribute from the button with `id="checkSpelling"` in `Traductor subtitulos.html` and/or `EditorSubtítulos.html`. Keep the `js` and `dictionaries` folders alongside the pages and reload the page after saving.
 
 Both pages support Spanish, English (US), Modern Greek, and German spelling review. The translator checks completed translations in the target language. The editor has a **Spelling language** selector. Click **Check spelling** to review each flagged word in context, select a suggestion or type a replacement, skip the occurrence, or add the word to your browser's personal dictionary for that language.
 
@@ -24,7 +26,7 @@ The bundled engine is [Typo.js 1.4.0](https://github.com/cfinke/Typo.js). The [H
 
 ## Set up the translator
 
-1. Open [Traductor subtitulos.html](Traductor%20subtitulos.html) in a browser. Keep the project files and dictionary folders together. The pages need no build step.
+1. Open [Traductor subtitulos.html](Traductor%20subtitulos.html) in a browser. Keep the project files and dictionary folders together. Keep JavaScript files in `js/`, the stylesheet in `css/`, and dictionaries in `dictionaries/`. The pages need no build step.
 2. Choose a translation engine and model. For Claude (Anthropic), OpenRouter, or OpenAI, enter your provider's API key under **API keys**. Cloud usage may incur charges from the provider.
 3. For local translation, start the LM Studio server with a chat model available and **Enable CORS** turned on. Select **LM Studio** in the app, set the server address under **API keys** if needed, and refresh the model list. The default address is `http://127.0.0.1:1234`.
 
@@ -60,6 +62,8 @@ WebVTT exports regenerate the file from cue text and timings. They omit original
 
 On either page, drop a matching local MP4 into **Video preview** or click the box to browse. The translator offers **Translation**, **Original**, and **No subtitles**. The player reflects text edits, including spelling corrections. Once the video is ready, the play icon on each row jumps to that cue. The video stays on your device, so select the MP4 again after reopening a project.
 
+Use **Go to segment** below the video to scroll to and focus the subtitle currently displayed. The button follows the selected preview mode and any applied timing edits. It is disabled when no subtitle is displayed or subtitles are switched off. In the translator, it clears the search and row filter when needed to reveal the active segment.
+
 To retime a translation, edit **Start** and **End** in its row using `HH:MM:SS,mmm`, then select **Apply timing**. The translated preview and translated SRT use the adjusted times. The original preview and other subtitle exports use the source times. Saved projects retain timing edits for later review.
 
 ## Privacy
@@ -77,7 +81,7 @@ The app sends subtitle text, translation context, and any notes or glossary entr
 | [Localizationtools.js](js/Localizationtools.js) | TMX translation memory export. |
 | [videoprevis.js](js/videoprevis.js) | Local MP4 player and synchronized subtitle preview. |
 | [spellcheck.js](js/spellcheck.js), [spellcheck-worker.js](js/spellcheck-worker.js), and [dictionaries/](dictionaries/) | Spelling review, browser-side checking, and bundled dictionaries. |
-| [styles.css](styles.css) | Responsive layout and light and dark styling. |
+| [styles.css](css/styles.css) | Responsive layout and light and dark styling. |
 | [Pruebas/](Pruebas/) | Greek and German sample subtitle files for trying the workflow. |
 
 ## Credits

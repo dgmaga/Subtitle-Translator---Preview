@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Editor de subtítulos</title>
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
   <header class="top">
@@ -49,6 +49,7 @@
         <p id="previewError" class="warn" role="alert" hidden></p>
         <video id="previewVideo" controls playsinline preload="metadata" tabindex="0" hidden
           data-i-aria="video.title" aria-label="Video preview"></video>
+        <button type="button" class="btn" id="goToSegment" disabled data-i="video.goSegment">Go to segment</button>
       </div>
     </section>
     <section class="card">
@@ -72,7 +73,7 @@
             <option value="de" lang="de">Deutsch</option>
           </select>
         </label>
-        <button class="btn" id="checkSpelling" type="button" data-i="spell.check">Check spelling</button>
+        <button class="btn" id="checkSpelling" type="button" hidden data-i="spell.check">Check spelling</button>
         <button class="btn primary" id="editorSrt" disabled data-i="exp.srt">Download .srt</button>
         <button class="btn" id="editorVtt" disabled data-i="editor.vtt">Download .vtt</button>
       </div>
