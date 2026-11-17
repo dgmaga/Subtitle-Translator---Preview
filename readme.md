@@ -20,7 +20,7 @@ Both pages support Spanish, English (US), Modern Greek, and German spelling revi
 
 Serve the project folder over HTTP or HTTPS so the browser can load the spelling worker and dictionaries. For offline use, run `python -m http.server 8000 --bind 127.0.0.1` in the project folder and open either page via `http://127.0.0.1:8000/`. Only dictionary and application files are requested from the server. Spelling runs in the browser.
 
-The bundled engine is [Typo.js 1.4.0](https://github.com/cfinke/Typo.js). The [Hunspell dictionary packages](https://github.com/wooorm/dictionaries) are `dictionary-el` 4.0.0, `dictionary-de` 3.0.0, `dictionary-es` 4.0.0, and `dictionary-en` 4.0.0. Their source attributions and licenses are in [dictionaries/](dictionaries/).
+The bundled engine is [Typo.js 1.4.0](https://github.com/cfinke/Typo.js). The [Hunspell dictionary packages](https://github.com/wooorm/dictionaries) are `dictionary-el` 4.0.0, `dictionary-de` 3.0.0, `dictionary-es` 4.0.0, and `dictionary-en` 4.0.0. The engine code is in `js/typo.js`. Source attributions and licenses are in [dictionaries/](dictionaries/).
 
 ## Set up the translator
 
@@ -71,12 +71,12 @@ The app sends subtitle text, translation context, and any notes or glossary entr
 | Path | Purpose |
 | --- | --- |
 | [Traductor subtitulos.html](Traductor%20subtitulos.html) | Browser entry point and interface markup. |
-| [EditorSubtítulos.html](EditorSubt%C3%ADtulos.html) and [editorsubtitulos.js](editorsubtitulos.js) | Monolingual editing interface, timing controls, and export. |
-| [app.js](app.js) | Subtitle parsing, provider requests, batch processing, review, project storage, and export. |
-| [i18n.js](i18n.js) | English and Spanish interface text. |
-| [Localizationtools.js](Localizationtools.js) | TMX translation memory export. |
-| [videoprevis.js](videoprevis.js) | Local MP4 player and synchronized subtitle preview. |
-| [spellcheck.js](spellcheck.js), [spellcheck-worker.js](spellcheck-worker.js), and [dictionaries/](dictionaries/) | Spelling review, browser-side checking, and bundled dictionaries. |
+| [EditorSubtítulos.html](EditorSubt%C3%ADtulos.html) and [editorsubtitulos.js](js/editorsubtitulos.js) | Monolingual editing interface, timing controls, and export. |
+| [app.js](js/app.js) | Subtitle parsing, provider requests, batch processing, review, project storage, and export. |
+| [i18n.js](js/i18n.js) | English and Spanish interface text. |
+| [Localizationtools.js](js/Localizationtools.js) | TMX translation memory export. |
+| [videoprevis.js](js/videoprevis.js) | Local MP4 player and synchronized subtitle preview. |
+| [spellcheck.js](js/spellcheck.js), [spellcheck-worker.js](js/spellcheck-worker.js), and [dictionaries/](dictionaries/) | Spelling review, browser-side checking, and bundled dictionaries. |
 | [styles.css](styles.css) | Responsive layout and light and dark styling. |
 | [Pruebas/](Pruebas/) | Greek and German sample subtitle files for trying the workflow. |
 

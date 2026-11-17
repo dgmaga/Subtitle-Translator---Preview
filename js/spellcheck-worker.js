@@ -1,6 +1,6 @@
 'use strict';
 
-importScripts('dictionaries/typo-js/typo.js');
+importScripts('typo.js');
 
 let dictionary;
 let loadedLanguage;
@@ -8,7 +8,7 @@ let loadedLanguage;
 async function loadDictionary(language) {
   if (language === loadedLanguage) return;
   const files = await Promise.all(['aff', 'dic'].map(async extension => {
-    const response = await fetch(`dictionaries/${language}/index.${extension}`);
+    const response = await fetch(`../dictionaries/${language}/index.${extension}`);
     if (!response.ok) throw new Error('Dictionary unavailable');
     return response.text();
   }));

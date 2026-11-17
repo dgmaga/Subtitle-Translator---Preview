@@ -111,7 +111,7 @@ const SpellCheck = (() => {
         status.textContent = t('spell.error');
       };
       try {
-        worker = new Worker('spellcheck-worker.js');
+        worker = new Worker('js/spellcheck-worker.js');
         worker.onerror = fail;
         worker.onmessage = ({ data }) => {
           if (request !== generation) return;
