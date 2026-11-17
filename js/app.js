@@ -1181,6 +1181,26 @@ stacking = apilamiento`;
     onReadyChange: renderTable,
   });
 
+
+  window.receiveEditorProject = ({ project, video }) => {
+    if (S.running) {
+      toast(t('run.wait'), 'warn');
+      return false;
+    }
+    const validated = Core.parseProject(project);
+    if (video != null && !['[object File]', '[object Blob]'].includes(Object.prototype.toString.call(video))) throw new Error('Invalid video');
+    if (S.subs.length && !window.confirm(t('editor.replaceProject'))) return false;
+    restoreProject(validated);
+    el.restore.hidden = true;
+    if (video) preview.loadFile(video);
+    else preview.clear();
+    return true;
+  };
+  ProjectTransfer.receive(
+    source => source === window.parent && window.parent !== window || source === window.opener,
+    payload => window.receiveEditorProject(payload)
+  );
+
   function renderTable() {
     preview.sync();
     const f = el.filter.value;

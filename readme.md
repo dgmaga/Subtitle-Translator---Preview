@@ -1,9 +1,11 @@
 # Subtitle Translator and Editor
 
-The project has two browser pages with English and Spanish interfaces.
+Open [Index.html](Index.html) to use the translator and editor in two tabs. Each tool stays loaded when you switch tabs, preserving its current work until you reload or close the host page. The editor loads when you first select its tab. Video playback continues when you switch tabs, so pause it before switching if needed.
 
-- [Subtitle Translator](Traductor%20subtitulos.html) translates SRT and WebVTT files with an AI provider and supports 20 source and target language options.
-- [Subtitle Editor](EditorSubt%C3%ADtulos.html) edits the text and timing of an SRT in its original language.
+Both tools also open directly and have English and Spanish interfaces.
+
+- [Subtitle Translator](SubtitleTranslator.html) translates SRT and WebVTT files with an AI provider and supports 20 source and target language options.
+- [Subtitle Editor](SubtitleEditor.html) edits the text and timing of an SRT in its original language.
 
 ## Edit subtitles in one language
 
@@ -12,11 +14,13 @@ The project has two browser pages with English and Spanish interfaces.
 3. Optionally load a matching MP4 and use the play icon beside a cue to check its position in the video. Switch between **Edited subtitles** and **No subtitles**.
 4. Download the edited text and timings as `.edited.srt` or `.edited.vtt`.
 
+**Send for translation** downloads a JSON project containing the edited subtitle text and applied timings, then opens it in the translator with the selected MP4. In Index.html it switches to the translator tab. When the editor is opened directly, it opens a new translator tab. Choose the subtitle language in the editor before sending, then choose the target language and model in the translator. Translation starts when you click **Translate**.
+
 The editor's **API keys** dialog can store provider settings for future use. Editing, preview, spelling, and export run without an AI provider.
 
 ## Enable spelling review
 
-The **Check spelling** button is hidden by default on both pages because spelling review requires a web server or localhost. To enable it, remove the `hidden` attribute from the button with `id="checkSpelling"` in `Traductor subtitulos.html` and/or `EditorSubtítulos.html`. Keep the `js` and `dictionaries` folders alongside the pages and reload the page after saving.
+The **Check spelling** button is hidden by default on both pages because spelling review requires a web server or localhost. To enable it, remove the `hidden` attribute from the button with `id="checkSpelling"` in `SubtitleTranslator.html` and/or `SubtitleEditor.html`. Keep the `js` and `dictionaries` folders alongside the pages and reload the page after saving.
 
 Both pages support Spanish, English (US), Modern Greek, and German spelling review. The translator checks completed translations in the target language. The editor has a **Spelling language** selector. Click **Check spelling** to review each flagged word in context, select a suggestion or type a replacement, skip the occurrence, or add the word to your browser's personal dictionary for that language.
 
@@ -26,11 +30,11 @@ The bundled engine is [Typo.js 1.4.0](https://github.com/cfinke/Typo.js). The [H
 
 ## Set up the translator
 
-1. Open [Traductor subtitulos.html](Traductor%20subtitulos.html) in a browser. Keep the project files and dictionary folders together. Keep JavaScript files in `js/`, the stylesheet in `css/`, and dictionaries in `dictionaries/`. The pages need no build step.
+1. Open [SubtitleTranslator.html](SubtitleTranslator.html) in a browser. Keep the project files and dictionary folders together. Keep JavaScript files in `js/`, the stylesheet in `css/`, and dictionaries in `dictionaries/`. The pages need no build step.
 2. Choose a translation engine and model. For Claude (Anthropic), OpenRouter, or OpenAI, enter your provider's API key under **API keys**. Cloud usage may incur charges from the provider.
 3. For local translation, start the LM Studio server with a chat model available and **Enable CORS** turned on. Select **LM Studio** in the app, set the server address under **API keys** if needed, and refresh the model list. The default address is `http://127.0.0.1:1234`.
 
-If your browser blocks requests from a page opened directly from disk, you can serve the folder over HTTP. For example, with Python installed, run `python -m http.server 8000 --bind 127.0.0.1` from the project folder and open `http://127.0.0.1:8000/Traductor%20subtitulos.html`.
+If your browser blocks requests from a page opened directly from disk, you can serve the folder over HTTP. For example, with Python installed, run `python -m http.server 8000 --bind 127.0.0.1` from the project folder and open `http://127.0.0.1:8000/SubtitleTranslator.html`.
 
 ## Translate and review
 
@@ -74,8 +78,8 @@ The app sends subtitle text, translation context, and any notes or glossary entr
 
 | Path | Purpose |
 | --- | --- |
-| [Traductor subtitulos.html](Traductor%20subtitulos.html) | Browser entry point and interface markup. |
-| [EditorSubtítulos.html](EditorSubt%C3%ADtulos.html) and [editorsubtitulos.js](js/editorsubtitulos.js) | Monolingual editing interface, timing controls, and export. |
+| [SubtitleTranslator.html](SubtitleTranslator.html) | Browser entry point and interface markup. |
+| [SubtitleEditor.html](SubtitleEditor.html) and [editorsubtitulos.js](js/editorsubtitulos.js) | Monolingual editing interface, timing controls, and export. |
 | [app.js](js/app.js) | Subtitle parsing, provider requests, batch processing, review, project storage, and export. |
 | [i18n.js](js/i18n.js) | English and Spanish interface text. |
 | [Localizationtools.js](js/Localizationtools.js) | TMX translation memory export. |

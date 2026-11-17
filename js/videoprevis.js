@@ -9,6 +9,7 @@ const VideoPreview = (() => {
   function mount({ panel, drop, input, video, mode, error, getSubtitles, t, onReadyChange, goToSegment, onGoToSegment }) {
     const track = video.addTextTrack('subtitles');
     let url = null;
+    let currentFile = null;
     let frame = null;
 
     function currentSegment() {
@@ -58,6 +59,7 @@ const VideoPreview = (() => {
       frame = null;
       const previousUrl = url;
       url = null;
+      currentFile = null;
       video.removeAttribute('src');
       video.hidden = true;
       if (previousUrl) {
@@ -80,6 +82,7 @@ const VideoPreview = (() => {
         return;
       }
       clear();
+      currentFile = file;
       url = URL.createObjectURL(file);
       video.src = url;
       video.hidden = false;
@@ -132,7 +135,7 @@ const VideoPreview = (() => {
       video.focus({ preventScroll: true });
     }
 
-    return { clear, ready, seek, sync };
+    return { clear, ready, seek, sync, loadFile, getFile: () => currentFile };
   }
 
   return { mount };

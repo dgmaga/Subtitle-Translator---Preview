@@ -264,3 +264,5 @@ body:not(.loaded) .findbar { display: none; }
 #spellDialog .actions {
   flex-wrap: wrap;
 }
+
+.editor-exportbar { align-items: flex-end; }

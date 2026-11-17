@@ -18,6 +18,7 @@
         <option value="en">EN</option>
       </select>
       <button class="btn ghost" id="openKeys" data-i="nav.keys"><span aria-hidden="true">🔑</span> API keys</button>
+      
     </nav>
   </header>
   <main>
@@ -64,8 +65,9 @@
           </tbody>
         </table>
       </div>
-      <div class="exportbar">
-        <label><span data-i="spell.language">Spelling language</span>
+      <div class="exportbar editor-exportbar">
+       <!-- Commented out for now - spelling only works on a server or localhost-->
+        <label hidden><span data-i="spell.language">Spelling language</span>
           <select id="spellingLanguage">
             <option value="es" lang="es">Español</option>
             <option value="en" lang="en">English</option>
@@ -73,7 +75,9 @@
             <option value="de" lang="de">Deutsch</option>
           </select>
         </label>
+        
         <button class="btn" id="checkSpelling" type="button" hidden data-i="spell.check">Check spelling</button>
+        <button class="btn" id="sendTranslation" disabled data-i="editor.sendTranslation">Send for translation</button>
         <button class="btn primary" id="editorSrt" disabled data-i="exp.srt">Download .srt</button>
         <button class="btn" id="editorVtt" disabled data-i="editor.vtt">Download .vtt</button>
       </div>
@@ -124,6 +128,7 @@
   <script src="js/i18n.js"></script>
   <script src="js/spellcheck.js"></script>
   <script src="js/videoprevis.js"></script>
+  <script src="js/project-transfer.js"></script>
   <script src="js/app.js"></script>
   <script src="js/editorsubtitulos.js"></script>
 </body>

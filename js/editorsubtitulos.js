@@ -26,7 +26,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setUiLang(language.value);
     document.documentElement.lang = language.value;
     document.title = t('editor.title');
-    document.querySelectorAll('[data-i]').forEach(node => { node.textContent = t(node.dataset.i); });
+    document.querySelectorAll('[data-i]').forEach(node => { node.innerHTML = t(node.dataset.i); });
     document.querySelectorAll('[data-i-aria]').forEach(node => node.setAttribute('aria-label', t(node.dataset.iAria)));
     status.hidden = true;
   }
@@ -102,6 +102,7 @@ document.addEventListener('DOMContentLoaded', () => {
       fileInfo.hidden = false;
       document.body.classList.add('loaded');
       buttons.forEach(button => { button.disabled = false; });
+      $('#sendTranslation').disabled = false;
       render();
     } catch {
       if (request === loadRequest) notify('editor.readError', true);
@@ -191,6 +192,31 @@ document.addEventListener('DOMContentLoaded', () => {
     t,
   });
 
+
+  $('#sendTranslation').addEventListener('click', async () => {
+    if (!subtitles.length) return;
+    const src = $('#spellingLanguage').value;
+    const project = {
+      app: 'traductor-subtitulos', version: 2, fileName, src,
+      tgt: Core.defaultTarget(src), notes: '', removeSpeakers: false,
+      subs: subtitles.map(cue => ({ start: cue.start, end: cue.end, raw: cue.text })),
+      out: subtitles.map(() => ''), st: subtitles.map(() => 'pending'),
+    };
+    Core.parseProject(project);
+    const payload = { project, video: preview.getFile() };
+    const button = $('#sendTranslation');
+    button.disabled = true;
+    try {
+      const target = window.parent !== window ? window.parent : window.open('SubtitleTranslator.html', '_blank');
+      if (!target) return notify('editor.popupBlocked', true);
+      const accepted = await ProjectTransfer.send(target, payload);
+      if (accepted) download('json', () => JSON.stringify(project), 'application/json');
+    } catch {
+      notify('editor.sendError', true);
+    } finally {
+      button.disabled = false;
+    }
+  });
   const keysDialog = $('#keysDlg');
   const providers = { anthropic: '#kAnthropic', openrouter: '#kOpenrouter', openai: '#kOpenai' };
   const keyStorage = 'ts2.keys';

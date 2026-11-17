@@ -1,0 +1,52 @@
+.tools-host {
+  height: 100vh;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.host-header {
+  flex: none;
+  padding: .75rem 1rem 0;
+  background: var(--card);
+  border-bottom: 1px solid var(--line);
+}
+
+.host-tabs {
+  display: flex;
+  gap: .5rem;
+  margin-top: .6rem;
+}
+
+.host-tabs button {
+  font: inherit;
+  padding: .6rem .9rem;
+  color: var(--muted);
+  background: transparent;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+}
+
+.host-tabs button[aria-selected="true"] {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+.host-tabs button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -3px;
+}
+
+.host-panel {
+  flex: 1;
+  min-height: 0;
+}
+
+.host-panel iframe {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}

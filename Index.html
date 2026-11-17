@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Subtitle Tools</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/host.css">
+  <script src="js/project-transfer.js" defer></script>
+  <script src="js/host.js" defer></script>
+</head>
+<body class="tools-host">
+  <header class="host-header">
+    <h1>Subtitle Tools</h1>
+    <div class="host-tabs" role="tablist" aria-label="Subtitle tools">
+      <button type="button" id="editorTab" role="tab" aria-selected="true"
+        aria-controls="editorPanel" tabindex="0">Subtitle Editor</button>
+      <button type="button" id="translatorTab" role="tab" aria-selected="false"
+        aria-controls="translatorPanel" tabindex="-1">Subtitle Translator</button>
+    </div>
+  </header>
+
+  <section id="editorPanel" class="host-panel" role="tabpanel" aria-labelledby="editorTab"  >
+    <iframe data-src="SubtitleEditor.html" title="Subtitle Editor"></iframe>
+  </section>
+  <section id="translatorPanel" class="host-panel" role="tabpanel" aria-labelledby="translatorTab" hidden >
+    <iframe src="SubtitleTranslator.html" title="Subtitle Translator"></iframe>
+  </section>
+</body>
+</html>
