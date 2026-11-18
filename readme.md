@@ -1,5 +1,22 @@
 # Subtitle Translator and Editor
 
+This is just another tool to translate subtitles. I just adapted it to my personal peferences.
+
+You can use it locally in a browser, no need to set up a local web server. You can use your own AI to do a draft translation and then review it.
+
+I added these features:
+1. Edit and fix the source subtitles before translating them.
+2. Possibility to edit the timing.
+2. Preview of the video to see what your translation looks like.
+3. Buttons to see the video from the current subtitle that you are editing.
+4. Button to jump to the editing box of the subtitle you are seeing on the screent.
+5. Download in tmx format for import into a translation memory.
+
+This is based on my own personal preferences and needs. I specially like the fact that a tool that has the features I need and nothing else.
+
+Thanks to David Arribas and TTomas65 for creating their own tools and sharing their work, which has been reused for this version.
+
+## How to use it
 Open [Index.html](Index.html) to use the translator and editor in two tabs. Each tool stays loaded when you switch tabs, preserving its current work until you reload or close the host page. The editor loads when you first select its tab. Video playback continues when you switch tabs, so pause it before switching if needed.
 
 Both tools also open directly and have English and Spanish interfaces.
